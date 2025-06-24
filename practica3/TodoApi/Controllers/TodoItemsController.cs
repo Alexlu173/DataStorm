@@ -59,6 +59,8 @@ public class TodoItemsController : ControllerBase
 
         todoItem.Name = todoDTO.Name;
         todoItem.IsComplete = todoDTO.IsComplete;
+        todoItem.Categorias = todoDTO.Categorias;
+        todoItem.Prioridad = todoDTO.Prioridad;
 
         try
         {
@@ -82,7 +84,9 @@ public class TodoItemsController : ControllerBase
         var todoItem = new TodoItem
         {
             IsComplete = todoDTO.IsComplete,
-            Name = todoDTO.Name
+            Name = todoDTO.Name,
+            Categorias = todoDTO.Categorias,
+            Prioridad = todoDTO.Prioridad
         };
 
         _context.TodoItems.Add(todoItem);
@@ -121,6 +125,8 @@ public class TodoItemsController : ControllerBase
        {
            Id = todoItem.Id,
            Name = todoItem.Name,
-           IsComplete = todoItem.IsComplete
+           IsComplete = todoItem.IsComplete,
+           Categorias = todoItem.Categorias,
+           Prioridad = todoItem.Prioridad
        };
 }

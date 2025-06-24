@@ -1,51 +1,74 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import TodoItem from '../components/TodoItem.vue'
+import TodoForm from '../components/Todoform.vue'
+import { fetchTodos, createTodo, deleteTodo } from '../api.js'
 
-let id = 0
-
-const newTodo = ref('')
-const hideCompleted = ref(false)
 const todos = ref([
-  { id: id++, text: 'Learn HTML', done: true },
-  { id: id++, text: 'Learn JavaScript', done: true },
-  { id: id++, text: 'Learn Vue', done: false }
 ])
 
+const hideCompleted = ref(false)
+
+const busqueda = ref('')
+
 const filteredTodos = computed(() => {
-  return hideCompleted.value
-    ? todos.value.filter((t) => !t.done)
-    : todos.value
+  return todos.value.filter((t) => {
+    const coincideTexto = t.name.toLowerCase().includes(busqueda.value.toLowerCase())
+    const coincideCompletado = hideCompleted.value ? !t.isComplete : true
+    return coincideTexto && coincideCompletado
+  })
 })
 
-function addTodo() {
-  todos.value.push({ id: id++, text: newTodo.value, done: false })
-  newTodo.value = ''
+async function addTodo(todoData) {
+  try {
+    const newTodo = await createTodo(todoData)
+    todos.value.push(newTodo)
+  } catch (error) {
+    console.error("No se pudo crear el TODO:", error)
+  }
 }
 
-function removeTodo(todo) {
-  todos.value = todos.value.filter((t) => t !== todo)
+async function removeTodo(todo) {
+  try {
+    if (deleteTodo(todo.id)) {
+      todos.value = todos.value.filter((t) => t.id !== todo.id)
+    }
+  }
+  catch (err) {
+    console.error("Error cargando tareas:", error)
+  }
 }
+
+function editTodo(updated) {
+  const index = todos.value.findIndex(t => t.id === updated.id)
+  if (index !== -1) {
+    todos.value[index] = updated
+  }
+}
+
+onMounted(async () => {
+  try {
+    const data = await fetchTodos()
+    todos.value = data
+  } catch (error) {
+    console.error("Error cargando tareas:", error)
+  }
+})
+
+
 </script>
 
 <template>
-  <form @submit.prevent="addTodo">
-    <input v-model="newTodo" required placeholder="new todo">
-    <button>Add Todo</button>
-  </form>
-  <ul>
-    <li v-for="todo in filteredTodos" :key="todo.id">
-      <input type="checkbox" v-model="todo.done">
-      <span :class="{ done: todo.done }">{{ todo.text }}</span>
-      <button @click="removeTodo(todo)">X</button>
-    </li>
-  </ul>
-  <button @click="hideCompleted = !hideCompleted">
-    {{ hideCompleted ? 'Show all' : 'Hide completed' }}
-  </button>
-</template>
+  <section class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold mb-4 text-gray-700">Mis Tareas</h1>
+    <TodoForm @add="addTodo" />
+    <input v-model="busqueda" placeholder="Buscar tarea..." class="input input-bordered w-full mb-4" />
+    <ul class="divide-y divide-gray-100 mb-4">
+      <TodoItem v-for="todo in filteredTodos" :key="todo.id" :todo="todo" @remove="removeTodo" @updated="editTodo" />
+    </ul>
 
-<style>
-.done {
-  text-decoration: line-through;
-}
-</style>
+    <button @click="hideCompleted = !hideCompleted" class="text-sm text-blue-500 hover:underline mt-2">
+      {{ hideCompleted ? 'Mostrar todas' : 'Ocultar completadas' }}
+    </button>
+  </section>
+</template>
